@@ -31,6 +31,7 @@ const OfferForm = ({ offer, onSave, onCancel }: { offer?: Offer; onSave: (offer:
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   
   // Country dropdown state
@@ -41,50 +42,51 @@ const OfferForm = ({ offer, onSave, onCancel }: { offer?: Offer; onSave: (offer:
   const countryInputRef = useRef<HTMLInputElement>(null);
 
   // List of countries
-  const countries = [
-    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", 
-    "Antigua and Barbuda", "Argentina", "Armenia", "Australia", 
-    "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", 
-    "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", 
-    "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", 
-    "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", 
-    "Cambodia", "Cameroon", "Canada", "Central African Republic", 
-    "Chad", "Chile", "China", "Colombia", "Comoros", 
-    "Congo, Democratic Republic of the", "Congo, Republic of the", 
-    "Costa Rica", "Cote d'Ivoire", "Croatia", "Cuba", "Cyprus", 
-    "Czech Republic", "Denmark", "Djibouti", "Dominica", 
-    "Dominican Republic", "Ecuador", "Egypt", "El Salvador", 
-    "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", 
-    "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", 
-    "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", 
-    "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", 
-    "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", 
-    "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", 
-    "Kazakhstan", "Kenya", "Kiribati", "Korea, North", "Korea, South", 
-    "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", 
-    "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", 
-    "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", 
-    "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", 
-    "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", 
-    "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", 
-    "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", 
-    "Niger", "Nigeria", "North Macedonia", "Norway", "Oman", 
-    "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", 
-    "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", 
-    "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", 
-    "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", 
-    "San Marino", "Sao Tome et Principe", "Saudi Arabia", "Senegal", 
-    "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", 
-    "Slovenia", "Solomon Islands", "Somalia", "South Africa", 
-    "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", 
-    "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", 
-    "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", 
-    "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", 
-    "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", 
-    "United Kingdom", "United States", "Uruguay", "Uzbekistan", 
-    "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", 
-    "Zambia", "Zimbabwe"
-  ];
+ const countries = [
+  "Afghanistan", "Albanie", "Algérie", "Andorre", "Angola",
+  "Antigua-et-Barbuda", "Argentine", "Arménie", "Australie",
+  "Autriche", "Azerbaïdjan", "Bahamas", "Bahreïn", "Bangladesh",
+  "Barbade", "Biélorussie", "Belgique", "Belize", "Bénin", "Bhoutan",
+  "Bolivie", "Bosnie-Herzégovine", "Botswana", "Brésil",
+  "Brunéi", "Bulgarie", "Burkina Faso", "Burundi", "Cap-Vert",
+  "Cambodge", "Cameroun", "Canada", "République centrafricaine",
+  "Tchad", "Chili", "Chine", "Colombie", "Comores",
+  "République démocratique du Congo", "République du Congo",
+  "Costa Rica", "Côte d’Ivoire", "Croatie", "Cuba", "Chypre",
+  "République tchèque", "Danemark", "Djibouti", "Dominique",
+  "République dominicaine", "Équateur", "Égypte", "Salvador",
+  "Guinée équatoriale", "Érythrée", "Estonie", "Eswatini",
+  "Éthiopie", "Fidji", "Finlande", "France", "Gabon", "Gambie",
+  "Géorgie", "Allemagne", "Ghana", "Grèce", "Grenade", "Guatemala",
+  "Guinée", "Guinée-Bissau", "Guyana", "Haïti", "Honduras",
+  "Hongrie", "Islande", "Inde", "Indonésie", "Iran", "Irak",
+  "Irlande", "Israël", "Italie", "Jamaïque", "Japon", "Jordanie",
+  "Kazakhstan", "Kenya", "Kiribati", "Corée du Nord", "Corée du Sud",
+  "Kosovo", "Koweït", "Kirghizistan", "Laos", "Lettonie", "Liban",
+  "Lesotho", "Libéria", "Libye", "Liechtenstein", "Lituanie",
+  "Luxembourg", "Madagascar", "Malawi", "Malaisie", "Maldives",
+  "Mali", "Malte", "Îles Marshall", "Mauritanie", "Maurice",
+  "Mexique", "Micronésie", "Moldavie", "Monaco", "Mongolie",
+  "Monténégro", "Maroc", "Mozambique", "Myanmar", "Namibie",
+  "Nauru", "Népal", "Pays-Bas", "Nouvelle-Zélande", "Nicaragua",
+  "Niger", "Nigéria", "Macédoine du Nord", "Norvège", "Oman",
+  "Pakistan", "Palaos", "Palestine", "Panama", "Papouasie-Nouvelle-Guinée",
+  "Paraguay", "Pérou", "Philippines", "Pologne", "Portugal", "Qatar",
+  "Roumanie", "Russie", "Rwanda", "Saint-Christophe-et-Niévès",
+  "Sainte-Lucie", "Saint-Vincent-et-les-Grenadines", "Samoa",
+  "Saint-Marin", "Sao Tomé-et-Principe", "Arabie saoudite", "Sénégal",
+  "Serbie", "Seychelles", "Sierra Leone", "Singapour", "Slovaquie",
+  "Slovénie", "Îles Salomon", "Somalie", "Afrique du Sud",
+  "Soudan du Sud", "Espagne", "Sri Lanka", "Soudan", "Suriname",
+  "Suède", "Suisse", "Syrie", "Taïwan", "Tadjikistan",
+  "Tanzanie", "Thaïlande", "Timor oriental", "Togo", "Tonga",
+  "Trinité-et-Tobago", "Tunisie", "Turquie", "Turkménistan",
+  "Tuvalu", "Ouganda", "Ukraine", "Émirats arabes unis",
+  "Royaume-Uni", "États-Unis", "Uruguay", "Ouzbékistan",
+  "Vanuatu", "Vatican", "Venezuela", "Viêt Nam", "Yémen",
+  "Zambie", "Zimbabwe"
+];
+
   
   // Load existing notification emails and custom documents when editing
   useEffect(() => {
@@ -174,6 +176,7 @@ const OfferForm = ({ offer, onSave, onCancel }: { offer?: Offer; onSave: (offer:
   // Handle department selection
   const handleDepartmentChange = (departmentId: string) => {
     setSelectedDepartment(departmentId);
+    setSelectedProjectId(''); // Reset selected project when department changes
     if (departmentId) {
       const deptProjects = projects.filter(p => p.department_id.toString() === departmentId);
       setFilteredProjects(deptProjects);
@@ -188,6 +191,7 @@ const OfferForm = ({ offer, onSave, onCancel }: { offer?: Offer; onSave: (offer:
       const project = projects.find(p => p.id === offer.project_id);
       if (project) {
         setSelectedDepartment(project.department_id.toString());
+        setSelectedProjectId(offer.project_id.toString());
         const deptProjects = projects.filter(p => p.department_id === project.department_id);
         setFilteredProjects(deptProjects);
       }
@@ -466,9 +470,8 @@ const OfferForm = ({ offer, onSave, onCancel }: { offer?: Offer; onSave: (offer:
       return;
     }
     
-    // Find the selected project (we'll use the first one from filtered projects for now)
-    // In a real implementation, you'd have a separate project selection state
-    const selectedProject = filteredProjects.length > 0 ? filteredProjects[0] : null;
+    // Find the selected project using the selected project ID
+    const selectedProject = filteredProjects.find(p => p.id.toString() === selectedProjectId);
     if (!selectedProject) {
       await Swal.fire({
         icon: 'warning',
@@ -709,15 +712,10 @@ const OfferForm = ({ offer, onSave, onCancel }: { offer?: Offer; onSave: (offer:
             id="project"
             name="project"
             className="mt-1 block w-full border-2 border-gray-200 rounded-lg shadow-sm py-3 px-4 text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 hover:border-gray-300"
-            value={filteredProjects.length > 0 ? filteredProjects[0].id : ''}
+            value={selectedProjectId}
             onChange={(e) => {
-              // Project selection logic - for now we just track the selected project
-              const projectId = parseInt(e.target.value);
-              const selected = filteredProjects.find(p => p.id === projectId);
-              if (selected) {
-                // You could store this in state if needed
-                console.log('Selected project:', selected);
-              }
+              // Update selected project state
+              setSelectedProjectId(e.target.value);
             }}
             required
             disabled={!selectedDepartment || filteredProjects.length === 0}
@@ -726,7 +724,7 @@ const OfferForm = ({ offer, onSave, onCancel }: { offer?: Offer; onSave: (offer:
               {!selectedDepartment ? t('rh.form.selectDepartmentFirst') : filteredProjects.length === 0 ? t('rh.form.noProjectsAvailable') : t('rh.form.selectProject')}
             </option>
             {filteredProjects.map(project => (
-              <option key={project.id} value={project.id}>
+              <option key={project.id} value={project.id.toString()}>
                 {project.name}
               </option>
             ))}
@@ -838,7 +836,7 @@ const OfferForm = ({ offer, onSave, onCancel }: { offer?: Offer; onSave: (offer:
               {removedDefaultDocuments.size > 0 && (
                 <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-xs text-yellow-800">
-                    <strong>Note:</strong> {removedDefaultDocuments.size} document(s) removed. Applicants will not be required to upload these documents.
+                    <strong>Note:</strong> {removedDefaultDocuments.size} document(s) supprimé(s). Les candidat(e)s ne seront pas tenu(e)s de téléverser ces documents.
                   </p>
                 </div>
               )}

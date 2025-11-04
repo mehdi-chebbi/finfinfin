@@ -271,7 +271,8 @@ const en: Translations = {
   'rh.candidateModal.error': 'Failed to select candidate',
   'rh.candidateDisplay.title': 'Selected Candidate',
   'rh.candidateDisplay.label': 'Selected Candidate:',
-  'rh.candidateInfo': '✅ Congratulations! {candidate} has been successfully selected as the chosen candidate for this position. The selection process has been completed and we are pleased to announce this decision.',
+  'rh.candidateInfo': 'A candidate has been selected for this position.',
+  'rh.candidateInfodetails': 'At the conclusion of the selection process, {candidate} has been selected for this position. We sincerely thank all applicants for their interest and participation, and we wish them every success in their future professional endeavors.',
   'rh.button.candidateSelected': 'Candidate selected: {candidate}',
   'rh.button.offerMustExpire': 'Offer must expire before selecting a candidate',
   
@@ -753,11 +754,12 @@ const fr: Translations = {
   'rh.candidateModal.namePlaceholder': 'Entrez le nom du candidat (entreprise, individu ou organisation)',
   'rh.candidateModal.submit': 'Sélectionner le Candidat',
   'rh.candidateModal.cancel': 'Annuler',
-  'rh.candidateModal.success': '✅ Excellent ! Le candidat a été sélectionné avec succès et le statut de l\'offre a été mis à jour vers "Résultat".',
+  'rh.candidateModal.success': 'Le candidat a été sélectionné avec succès et le statut de l\'offre a été mis à jour vers "Résultat".',
   'rh.candidateModal.error': 'Échec de la sélection du candidat',
   'rh.candidateDisplay.title': 'Candidat Sélectionné',
   'rh.candidateDisplay.label': 'Candidat Sélectionné :',
-  'rh.candidateInfo': '✅ Félicitations ! {candidate} a été sélectionné avec succès comme candidat retenu pour ce poste. Le processus de sélection est terminé et nous sommes heureux d\'annoncer cette décision.',
+  'rh.candidateInfo': ' Un candidat a été sélectionné pour ce poste.',
+  'rh.candidateInfodetails': ' À l’issue du processus de sélection, {candidate} a été retenu·e pour ce poste. Nous remercions sincèrement l’ensemble des candidat·es pour leur intérêt et leur participation, et leur souhaitons beaucoup de succès dans la suite de leurs parcours professionnels.',
   
   // Swal alert translations
   'rh.swal.archiveTitle': 'Archiver les Candidatures',

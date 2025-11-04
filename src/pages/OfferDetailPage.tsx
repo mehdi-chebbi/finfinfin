@@ -313,8 +313,19 @@ const OfferDetailPage = () => {
                       </svg>
                       <p className="text-green-800 font-medium">{t('rh.candidateDisplay.label')}</p>
                     </div>
-                    <p className="text-green-700 mt-2">{t('rh.candidateInfo').replace('{candidate}', displayOffer.winner_name || '')}</p>
-                  </div>
+<p className="text-green-700 mt-2">
+  {(() => {
+    const text = t('rh.candidateInfodetails');
+    const [before, after] = text.split('{candidate}');
+    return (
+      <>
+        {before}
+        <strong className="font-bold underline text-xl">{displayOffer.winner_name || ''}</strong>
+        {after}
+      </>
+    );
+  })()}
+</p>                  </div>
                 </div>
               )}
               
@@ -370,7 +381,7 @@ const OfferDetailPage = () => {
                 )}
                 
                 {/* Show apply button only if no candidate has been selected (status is not 'resultat') */}
-                {displayOffer.status !== 'resultat' && (
+                {displayOffer.status !== 'resultat' && displayOffer.status !== 'sous_evaluation' && (
                   <button
                     onClick={() => setShowApplicationForm(true)}
                     className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700"

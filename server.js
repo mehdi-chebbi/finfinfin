@@ -57,12 +57,11 @@ app.use(cors({
 
 app.use(express.json());
 
-// Microsoft Graph API Configuration
 const OUTLOOK_CONFIG = {
     clientId: process.env.OUTLOOK_CLIENT_ID ,
     clientSecret: process.env.OUTLOOK_CLIENT_SECRET ,
     tenantId: process.env.OUTLOOK_TENANT_ID ,
-    userEmail: process.env.OUTLOOK_USER_EMAIL 
+    userEmail: process.env.OUTLOOK_USER_EMAIL
 };
 
 
@@ -468,11 +467,11 @@ let pool;
       )
     `);
     console.log('Offers table created');
-    
+
     // Add removed_default_documents column if it doesn't exist (for existing databases)
     try {
       await pool.query(`
-        ALTER TABLE offers 
+        ALTER TABLE offers
         ADD COLUMN IF NOT EXISTS removed_default_documents TEXT
       `);
       console.log('removed_default_documents column added to offers table');
@@ -767,7 +766,7 @@ app.delete('/departments/:id', auth, requireRole('comite_ajout'), async (req, re
       return res.status(403).json({ error: 'Department not found or access denied' });
     }
 
-    const [projectCheck] = await pool.query('SELECT COUNT(*) as count FROM projects WHERE department_id = ?', [req.params.id]);
+    const [projectCheck] = await pool.query('SELECT COUNT(*) as count FROM projects WHERE department_id = ?', [req.params.id]); 
     if (projectCheck[0].count > 0) {
       return res.status(400).json({ error: 'Cannot delete department with existing projects' });
     }
@@ -894,7 +893,7 @@ app.delete('/projects/:id', auth, requireRole('comite_ajout'), async (req, res) 
       return res.status(403).json({ error: 'Project not found or access denied' });
     }
 
-    const [offerCheck] = await pool.query('SELECT COUNT(*) as count FROM offers WHERE project_id = ?', [req.params.id]);
+    const [offerCheck] = await pool.query('SELECT COUNT(*) as count FROM offers WHERE project_id = ?', [req.params.id]);        
     if (offerCheck[0].count > 0) {
       return res.status(400).json({ error: 'Impossible de supprimer un projet contenant des offres existantes.' });
     }
@@ -914,15 +913,15 @@ app.get('/offers', async (req, res) => {
   try {
     // Get current server local time for real-time status checking
     const now = getLocalDate();
-    
+
     // First, update any expired offers from actif to sous_evaluation
     // Use Tunisia time comparison directly
     await pool.query(`
-      UPDATE offers 
-      SET status = 'sous_evaluation' 
+      UPDATE offers
+      SET status = 'sous_evaluation'
       WHERE deadline < ? AND status = 'actif'
     `, [now]);
-    
+
     const [offers] = await pool.query(`
       SELECT o.id, o.type, o.title, o.description, o.country,
              p.name as project_name, d.name as department_name,
@@ -947,7 +946,7 @@ app.get('/offers', async (req, res) => {
           removedDefaultDocs = [];
         }
       }
-      
+
       return {
         ...offer,
         removed_default_documents: removedDefaultDocs,
@@ -966,15 +965,15 @@ app.get('/offers/dashboard', auth, requireRole(['comite_ajout', 'comite_ouvertur
   try {
     // Use server local time for consistent comparison
     const now = getLocalDate();
-    
+
     // First, update any expired offers from actif to sous_evaluation
     // Use Tunisia time comparison directly
     await pool.query(`
-      UPDATE offers 
-      SET status = 'sous_evaluation' 
+      UPDATE offers
+      SET status = 'sous_evaluation'
       WHERE deadline < ? AND status = 'actif'
     `, [now]);
-    
+
     // For comite_ouverture, show all offers. For comite_ajout, show only user's offers.
     const whereClause = req.user.role === 'comite_ouverture' ? '' : 'WHERE o.created_by = ?';
     const params = req.user.role === 'comite_ouverture' ? [] : [req.user.id];
@@ -1016,7 +1015,7 @@ app.get('/offers/dashboard', auth, requireRole(['comite_ajout', 'comite_ouvertur
           removedDefaultDocs = [];
         }
       }
-      
+
       return {
         ...offer,
         removed_default_documents: removedDefaultDocs,
@@ -1035,15 +1034,15 @@ app.get('/offers/:id', async (req, res) => {
   try {
     // Get current server local time for real-time status checking
     const now = getLocalDate();
-    
+
     // First, update any expired offers from actif to sous_evaluation
     // Use Tunisia time comparison directly
     await pool.query(`
-      UPDATE offers 
-      SET status = 'sous_evaluation' 
+      UPDATE offers
+      SET status = 'sous_evaluation'
       WHERE deadline < ? AND status = 'actif'
     `, [now]);
-    
+
     const [rows] = await pool.query(`
       SELECT o.id, o.type, o.title, o.description, o.country,
              p.name as project_name, d.name as department_name,
@@ -1060,7 +1059,7 @@ app.get('/offers/:id', async (req, res) => {
     }
 
     const offer = rows[0];
-    
+
     // Parse removed default documents
     let removedDefaultDocs = [];
     if (offer.removed_default_documents) {
@@ -1074,7 +1073,7 @@ app.get('/offers/:id', async (req, res) => {
         removedDefaultDocs = [];
       }
     }
-    
+
     // Get custom required documents for the offer
     const [customDocs] = await pool.query(
       `SELECT id, offer_id, document_name, document_key, required, created_at
@@ -1082,7 +1081,7 @@ app.get('/offers/:id', async (req, res) => {
        WHERE offer_id = ?`,
       [req.params.id]
     );
-    
+
     const offerWithUrl = {
       ...offer,
       custom_required_documents: customDocs,
@@ -1132,7 +1131,7 @@ app.post('/offers', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'), 
         console.error('Error parsing notification emails:', e);
       }
     }
-    
+
     // Parse removed default documents
     let removedDefaultDocs = [];
     if (removed_default_documents) {
@@ -1175,7 +1174,7 @@ app.post('/offers', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'), 
 
     // Get the complete offer data to return to frontend
     const [newOffer] = await pool.query(
-      `SELECT o.*, p.name as project_name, d.name as department_name, u.name as created_by_name, u.email as created_by_email
+      `SELECT o.*, p.name as project_name, d.name as department_name, u.name as created_by_name, u.email as created_by_email    
        FROM offers o
        LEFT JOIN projects p ON o.project_id = p.id
        LEFT JOIN departments d ON p.department_id = d.id
@@ -1250,7 +1249,7 @@ app.put('/offers/:id', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'
         console.error('Error parsing notification emails:', e);
       }
     }
-    
+
     // Parse removed default documents
     let removedDefaultDocs = [];
     if (removed_default_documents) {
@@ -1266,13 +1265,13 @@ app.put('/offers/:id', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'
     }
 
     await pool.query(
-      `UPDATE offers SET type = ?, title = ?, description = ?, country = ?, project_id = ?, reference = ?, deadline = ?, status = ?, winner_name = ?, tdr_filename = ?, tdr_filepath = ?, notification_emails = ?, removed_default_documents = ? WHERE id = ?`,
+      `UPDATE offers SET type = ?, title = ?, description = ?, country = ?, project_id = ?, reference = ?, deadline = ?, status = ?, winner_name = ?, tdr_filename = ?, tdr_filepath = ?, notification_emails = ?, removed_default_documents = ? WHERE id = ?`, 
       [type, title, description, country, project_id, reference, deadline, 'actif', null, tdrFilename, tdrFilepath, JSON.stringify(emails), JSON.stringify(removedDefaultDocs), id]
     );
 
     // Handle custom required documents - delete existing and recreate
     await pool.query('DELETE FROM custom_required_documents WHERE offer_id = ?', [id]);
-    
+
     if (custom_documents) {
       try {
         const documents = JSON.parse(custom_documents);
@@ -1292,7 +1291,7 @@ app.put('/offers/:id', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'
 
     // Get the updated offer data to return to frontend
     const [updatedOffer] = await pool.query(
-      `SELECT o.*, p.name as project_name, d.name as department_name, u.name as created_by_name, u.email as created_by_email
+      `SELECT o.*, p.name as project_name, d.name as department_name, u.name as created_by_name, u.email as created_by_email    
        FROM offers o
        LEFT JOIN projects p ON o.project_id = p.id
        LEFT JOIN departments d ON p.department_id = d.id
@@ -1349,11 +1348,11 @@ app.post('/offers/:id/set-winner', auth, requireRole(['comite_ajout', 'comite_ou
     }
 
     // Verify offer exists and belongs to user (if comite_ajout)
-    const whereClause = req.user.role === 'comite_ouverture' 
-      ? 'WHERE id = ?' 
+    const whereClause = req.user.role === 'comite_ouverture'
+      ? 'WHERE id = ?'
       : 'WHERE id = ? AND created_by = ?';
-    const params = req.user.role === 'comite_ouverture' 
-      ? [id] 
+    const params = req.user.role === 'comite_ouverture'
+      ? [id]
       : [id, req.user.id];
 
     const [offerCheck] = await pool.query(`SELECT id, title, status FROM offers ${whereClause}`, params);
@@ -1376,7 +1375,7 @@ app.post('/offers/:id/set-winner', auth, requireRole(['comite_ajout', 'comite_ou
     );
 
     logOfferAction(req.user, `set winner for`, `"${offer.title}" - Winner: ${winner_name}`);
-    res.json({ 
+    res.json({
       message: `Winner "${winner_name}" has been set for offer "${offer.title}"`,
       winner_name: winner_name,
       status: 'resultat'
@@ -1440,7 +1439,7 @@ app.post('/apply', uploadApplicantDynamic.any(), async (req, res) => {
     const [offerRows] = await pool.query('SELECT id, title, type, created_by, deadline, status, removed_default_documents FROM offers WHERE id = ?', [offer_id]);
     if (offerRows.length === 0) return res.status(404).json({ error: 'Offer not found' });
     const offer = offerRows[0];
-    
+
     // Parse removed default documents
     let removedDefaultDocs = [];
     if (offer.removed_default_documents) {
@@ -1456,16 +1455,16 @@ app.post('/apply', uploadApplicantDynamic.any(), async (req, res) => {
     }
 
     // Check required files (filtered by removed documents)
-    const requiredFiles = ['cv', 'diplome', 'id_card', 'cover_letter'].filter(field => !removedDefaultDocs.includes(field));
+    const requiredFiles = ['cv', 'diplome', 'id_card', 'cover_letter'].filter(field => !removedDefaultDocs.includes(field));    
     for (const fieldName of requiredFiles) {
       const file = getFileByFieldname(fieldName);
-      
+
       if (!file) {
         console.log(`Missing required file: ${fieldName}`);
         console.log('Available fieldnames:', files ? files.map(f => f.fieldname) : []);
         return res.status(400).json({ error: `${fieldName} file is required` });
       }
-      
+
       if (file.mimetype !== 'application/pdf') {
         console.log(`Invalid file type for ${fieldName}: ${file.mimetype}`);
         return res.status(400).json({ error: `${fieldName} must be a PDF file` });
@@ -1485,7 +1484,7 @@ app.post('/apply', uploadApplicantDynamic.any(), async (req, res) => {
     }
 
     // Check if user already applied to this offer
-    const [existingApp] = await pool.query('SELECT id FROM applications WHERE offer_id = ? AND email = ?', [offer_id, email]);
+    const [existingApp] = await pool.query('SELECT id FROM applications WHERE offer_id = ? AND email = ?', [offer_id, email]);  
     if (existingApp.length > 0) {
       return res.status(400).json({ error: 'You have already applied to this offer' });
     }
@@ -1502,7 +1501,7 @@ app.post('/apply', uploadApplicantDynamic.any(), async (req, res) => {
         'offre_financiere'
       );
     }
-    
+
     // Filter out removed default documents
     const filteredAdditionalFiles = additionalRequiredFiles.filter(field => !removedDefaultDocs.includes(field));
 
@@ -1540,28 +1539,28 @@ app.post('/apply', uploadApplicantDynamic.any(), async (req, res) => {
 
     // Add additional files if they exist
     const additionalFields = [
-      'declaration_sur_honneur', 'fiche_de_referencement', 'extrait_registre', 
+      'declaration_sur_honneur', 'fiche_de_referencement', 'extrait_registre',
       'note_methodologique', 'liste_references', 'offre_financiere'
     ];
-    
+
     for (const fieldName of additionalFields) {
       const file = getFileByFieldname(fieldName);
       // Explicitly set to NULL if file doesn't exist to prevent undefined values
       applicationData[`${fieldName}_filename`] = file ? file.originalname : null;
       applicationData[`${fieldName}_filepath`] = file ? file.path : null;
     }
-    
+
     // Collect custom documents and other documents
     const customDocuments = [];
     const otherDocuments = [];
-    
+
     // Build processed fieldnames set based on what's actually required for this offer
     const processedFieldnames = new Set([
       'cv', 'diplome', 'id_card', 'cover_letter',
       'declaration_sur_honneur', 'fiche_de_referencement', 'extrait_registre',
       'note_methodologique', 'liste_references', 'offre_financiere'
     ]);
-    
+
     // Remove fieldnames that were removed from this offer's requirements
     removedDefaultDocs.forEach(field => processedFieldnames.delete(field));
 
@@ -1575,7 +1574,7 @@ app.post('/apply', uploadApplicantDynamic.any(), async (req, res) => {
           const index = file.fieldname.replace('other_doc_', '');
           const nameField = `other_doc_name_${index}`;
           const documentName = req.body[nameField] || `Document_${index}`;
-          
+
           otherDocuments.push({
             name: documentName,
             filename: file.originalname,
@@ -1596,7 +1595,7 @@ app.post('/apply', uploadApplicantDynamic.any(), async (req, res) => {
     const [result] = await pool.query(`
       INSERT INTO applications
       (offer_id, full_name, email, tel_number, applicant_country, cv_filename, cv_filepath,
-      diplome_filename, diplome_filepath, id_card_filename, id_card_filepath, cover_letter_filename, cover_letter_filepath,
+      diplome_filename, diplome_filepath, id_card_filename, id_card_filepath, cover_letter_filename, cover_letter_filepath,     
       declaration_sur_honneur_filename, declaration_sur_honneur_filepath, fiche_de_referencement_filename, fiche_de_referencement_filepath,
       extrait_registre_filename, extrait_registre_filepath, note_methodologique_filename, note_methodologique_filepath,
       liste_references_filename, liste_references_filepath, offre_financiere_filename, offre_financiere_filepath)
@@ -1625,11 +1624,11 @@ app.post('/apply', uploadApplicantDynamic.any(), async (req, res) => {
           'SELECT id FROM custom_required_documents WHERE offer_id = ? AND document_key = ?',
           [offer_id, customDoc.key]
         );
-        
+
         if (customDocRows.length > 0) {
           const customDocumentId = customDocRows[0].id;
           await pool.query(
-            `INSERT INTO applicant_custom_documents (application_id, custom_document_id, document_name, file_path, file_size)
+            `INSERT INTO applicant_custom_documents (application_id, custom_document_id, document_name, file_path, file_size)   
              VALUES (?, ?, ?, ?, ?)`,
             [applicationId, customDocumentId, customDoc.key, customDoc.filepath, 0]
           );
@@ -1741,15 +1740,15 @@ app.get('/applications/summary', auth, requireRole(['comite_ajout', 'comite_ouve
   try {
     // Use server local time for consistent comparison
     const now = getLocalDate();
-    
+
     // First, update any expired offers from actif to sous_evaluation
     // Use Tunisia time comparison directly
     await pool.query(`
-      UPDATE offers 
-      SET status = 'sous_evaluation' 
+      UPDATE offers
+      SET status = 'sous_evaluation'
       WHERE deadline < ? AND status = 'actif'
     `, [now]);
-    
+
     // For comite_ouverture, show all offers. For comite_ajout, show only user's offers.
     const whereClause = req.user.role === 'comite_ouverture' ? '' : 'WHERE o.created_by = ?';
     const params = req.user.role === 'comite_ouverture' ? [] : [req.user.id];
@@ -1795,10 +1794,10 @@ app.get('/applications/summary', auth, requireRole(['comite_ajout', 'comite_ouve
 });
 
 // Archive applications for an expired offer
-app.post('/applications/archive/:offerId', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {
+app.post('/applications/archive/:offerId', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {       
   try {
     const { offerId } = req.params;
-    
+
     // Use Tunisia time for consistent comparison
     const now = getLocalDate();
 
@@ -1843,7 +1842,7 @@ app.post('/applications/archive/:offerId', auth, requireRole(['comite_ajout', 'c
     const [nonArchivedApps] = await pool.query(`
       SELECT COUNT(*) as count FROM applications WHERE offer_id = ? AND archived_at IS NULL
     `, [offerId]);
-    
+
     const nonArchivedCount = nonArchivedApps[0].count;
 
     // Create a zip file with all applications
@@ -1902,7 +1901,7 @@ app.post('/applications/archive/:offerId', auth, requireRole(['comite_ajout', 'c
 
       // Get custom documents for this application
       const [customDocs] = await pool.query(
-        `SELECT acd.document_name, acd.file_path, crd.document_key 
+        `SELECT acd.document_name, acd.file_path, crd.document_key
          FROM applicant_custom_documents acd
          JOIN custom_required_documents crd ON acd.custom_document_id = crd.id
          WHERE acd.application_id = ?`,
@@ -1957,7 +1956,7 @@ Candidate Information:
 
     // Mark only non-archived applications as archived (leave previously archived ones untouched)
     if (nonArchivedCount > 0) {
-      await pool.query('UPDATE applications SET archived_at = NOW() WHERE offer_id = ? AND archived_at IS NULL', [offerId]);
+      await pool.query('UPDATE applications SET archived_at = NOW() WHERE offer_id = ? AND archived_at IS NULL', [offerId]);    
     }
 
     // Log the action
@@ -1978,7 +1977,7 @@ Candidate Information:
 });
 
 // Download archived applications file
-app.get('/applications/archive/:filename', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {
+app.get('/applications/archive/:filename', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {       
   try {
     const { filename } = req.params;
     const filePath = `./archives/${filename}`;
@@ -1998,7 +1997,7 @@ app.get('/applications/archive/:filename', auth, requireRole(['comite_ajout', 'c
 });
 
 // Download documents for a specific application
-app.get('/applications/:id/:documentType', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {
+app.get('/applications/:id/:documentType', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {       
   try {
     const { id, documentType } = req.params;
 
@@ -2048,7 +2047,7 @@ async function checkExpiredOffers() {
 
     // Format dates for comparison (DATETIME format) - using Tunisia time
     const nowStr = getLocalTime();
-    
+
     // Check for offers expiring in the next 24 hours (1 day warning) - haven't been notified for 1-day warning
     const [expiringTomorrowOffers] = await pool.query(`
       SELECT o.*, u.name as hr_name, u.email as hr_email
@@ -2087,9 +2086,9 @@ async function checkExpiredOffers() {
               );
 
               const recipientType = isHR ? 'HR creator' : 'notification email';
-              logAction(`System sent 1-day expiration warning for offer "${offer.title}" to ${email} (${recipientType})`);
+              logAction(`System sent 1-day expiration warning for offer "${offer.title}" to ${email} (${recipientType})`);      
             } catch (emailError) {
-              console.error(`Failed to send 1-day warning email to ${email} for offer ${offer.title}:`, emailError.message);
+              console.error(`Failed to send 1-day warning email to ${email} for offer ${offer.title}:`, emailError.message);    
             }
           }
         }
@@ -2141,9 +2140,9 @@ async function checkExpiredOffers() {
               );
 
               const recipientType = isHR ? 'HR creator' : 'notification email';
-              logAction(`System sent 2-day expiration warning for offer "${offer.title}" to ${email} (${recipientType})`);
+              logAction(`System sent 2-day expiration warning for offer "${offer.title}" to ${email} (${recipientType})`);      
             } catch (emailError) {
-              console.error(`Failed to send 2-day warning email to ${email} for offer ${offer.title}:`, emailError.message);
+              console.error(`Failed to send 2-day warning email to ${email} for offer ${offer.title}:`, emailError.message);    
             }
           }
         }
@@ -2197,9 +2196,9 @@ async function checkExpiredOffers() {
 
               // Log action
               const recipientType = isHR ? 'HR creator' : 'notification email';
-              logAction(`System sent expiration notification for offer "${offer.title}" to ${email} (${recipientType})`);
+              logAction(`System sent expiration notification for offer "${offer.title}" to ${email} (${recipientType})`);       
             } catch (emailError) {
-              console.error(`Failed to send expiration email to ${email} for offer ${offer.title}:`, emailError.message);
+              console.error(`Failed to send expiration email to ${email} for offer ${offer.title}:`, emailError.message);       
             }
           }
         }
@@ -2207,7 +2206,7 @@ async function checkExpiredOffers() {
         await pool.query('UPDATE offers SET deadline_notified = TRUE WHERE id = ?', [offer.id]);
 
         // Log action
-        logAction(`System processed expired offer "${offer.title}" with ${notificationEmails.length} notification emails`);
+        logAction(`System processed expired offer "${offer.title}" with ${notificationEmails.length} notification emails`);     
 
       } catch (error) {
         console.error(`Error processing expired offer ${offer.title}:`, error.message);
@@ -2216,8 +2215,8 @@ async function checkExpiredOffers() {
 
     // Update status of expired offers from 'actif' to 'sous_evaluation'
     const [expiredActiveOffers] = await pool.query(`
-      SELECT id, title 
-      FROM offers 
+      SELECT id, title
+      FROM offers
       WHERE deadline < ? AND status = 'actif'
     `, [now]);
 
@@ -2291,38 +2290,38 @@ app.post('/offers/:id/questions', async (req, res) => {
   try {
     const { id } = req.params;
     const { question } = req.body;
-    
+
     if (!question || question.trim() === '') {
       return res.status(400).json({ error: 'Question is required' });
     }
-    
+
     // Check if offer exists and is active
     const [offers] = await pool.query('SELECT status, deadline FROM offers WHERE id = ?', [id]);
     if (offers.length === 0) {
       return res.status(404).json({ error: 'Offer not found' });
     }
-    
+
     const offer = offers[0];
-    
+
     // Check if offer is still active (not expired and status is 'actif')
     const now = new Date();
     const deadline = new Date(offer.deadline);
-    
+
     if (offer.status !== 'actif' || deadline < now) {
       return res.status(400).json({ error: 'Questions can only be submitted for active offers' });
     }
-    
+
     // Insert the question
     const [result] = await pool.query(
       'INSERT INTO questions (offer_id, question) VALUES (?, ?)',
       [id, question.trim()]
     );
-    
-    res.status(201).json({ 
+
+    res.status(201).json({
       message: 'Question submitted successfully',
-      questionId: result.insertId 
+      questionId: result.insertId
     });
-    
+
   } catch (err) {
     console.error('Submit question error:', err);
     res.status(500).json({ error: 'Failed to submit question: ' + err.message });
@@ -2333,34 +2332,34 @@ app.post('/offers/:id/questions', async (req, res) => {
 app.get('/offers/:id/questions', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Get current server local time for real-time status checking
     const now = getLocalDate();
-    
+
     // First, update any expired offers from actif to sous_evaluation
     // Use Tunisia time comparison directly
     await pool.query(`
-      UPDATE offers 
-      SET status = 'sous_evaluation' 
+      UPDATE offers
+      SET status = 'sous_evaluation'
       WHERE deadline < ? AND status = 'actif'
     `, [now]);
-    
+
     // Check if offer exists
     const [offers] = await pool.query('SELECT status, deadline FROM offers WHERE id = ?', [id]);
     if (offers.length === 0) {
       return res.status(404).json({ error: 'Offer not found' });
     }
-    
+
     const offer = offers[0];
-    
+
     // Get all questions for this offer
     const [questions] = await pool.query(
-      'SELECT id, question, answer, created_at, answered_at FROM questions WHERE offer_id = ? ORDER BY created_at DESC',
+      'SELECT id, question, answer, created_at, answered_at FROM questions WHERE offer_id = ? ORDER BY created_at DESC',        
       [id]
     );
-    
+
     res.json(questions);
-    
+
   } catch (err) {
     console.error('Get questions error:', err);
     res.status(500).json({ error: 'Failed to get questions: ' + err.message });
@@ -2372,42 +2371,42 @@ app.put('/questions/:id/answer', auth, requireRole(['comite_ajout', 'comite_ouve
   try {
     const { id } = req.params;
     const { answer } = req.body;
-    
+
     if (!answer || answer.trim() === '') {
       return res.status(400).json({ error: 'Answer is required' });
     }
-    
+
     // Get the question and check if the offer is still active
     const [questions] = await pool.query(
-      `SELECT q.*, o.status as offer_status, o.deadline 
-       FROM questions q 
-       JOIN offers o ON q.offer_id = o.id 
+      `SELECT q.*, o.status as offer_status, o.deadline
+       FROM questions q
+       JOIN offers o ON q.offer_id = o.id
        WHERE q.id = ?`,
       [id]
     );
-    
+
     if (questions.length === 0) {
       return res.status(404).json({ error: 'Question not found' });
     }
-    
+
     const question = questions[0];
-    
+
     // Check if offer is still active
     const now = new Date();
     const deadline = new Date(question.deadline);
-    
+
     if (question.offer_status !== 'actif' || deadline < now) {
       return res.status(400).json({ error: 'Questions can only be answered for active offers' });
     }
-    
+
     // Update the question with the answer
     await pool.query(
       'UPDATE questions SET answer = ?, answered_at = CURRENT_TIMESTAMP WHERE id = ?',
       [answer.trim(), id]
     );
-    
+
     res.json({ message: 'Answer submitted successfully' });
-    
+
   } catch (err) {
     console.error('Answer question error:', err);
     res.status(500).json({ error: 'Failed to answer question: ' + err.message });
@@ -2418,38 +2417,38 @@ app.put('/questions/:id/answer', auth, requireRole(['comite_ajout', 'comite_ouve
 app.delete('/questions/:id/answer', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Get the question and check if it exists and has an answer
     const [questions] = await pool.query(
-      `SELECT q.*, o.status as offer_status, o.deadline 
-       FROM questions q 
-       JOIN offers o ON q.offer_id = o.id 
+      `SELECT q.*, o.status as offer_status, o.deadline
+       FROM questions q
+       JOIN offers o ON q.offer_id = o.id
        WHERE q.id = ? AND answer IS NOT NULL`,
       [id]
     );
-    
+
     if (questions.length === 0) {
       return res.status(404).json({ error: 'Question with answer not found' });
     }
-    
+
     const question = questions[0];
-    
+
     // Check if offer is still active (only allow deletion for active offers)
     const now = new Date();
     const deadline = new Date(question.deadline);
-    
+
     if (question.offer_status !== 'actif' || deadline < now) {
       return res.status(400).json({ error: 'Answers can only be deleted for active offers' });
     }
-    
+
     // Delete the answer (set answer and answered_at to NULL)
     await pool.query(
       'UPDATE questions SET answer = NULL, answered_at = NULL WHERE id = ?',
       [id]
     );
-    
+
     res.json({ message: 'Answer deleted successfully' });
-    
+
   } catch (err) {
     console.error('Delete answer error:', err);
     res.status(500).json({ error: 'Failed to delete answer: ' + err.message });
@@ -2461,28 +2460,94 @@ app.post('/offers/:id/update-expired-status', async (req, res) => {
   try {
     const { id } = req.params;
     const now = getLocalDate();
-    
-    // Update this specific offer if expired
-    // Use Tunisia time comparison directly
-    const [result] = await pool.query(`
-      UPDATE offers 
-      SET status = 'sous_evaluation' 
+
+    // First, get the offer details before updating (for email notification)
+    const [offerRows] = await pool.query(`
+      SELECT o.*, u.name as hr_name, u.email as hr_email
+      FROM offers o
+      JOIN users u ON o.created_by = u.id
+      WHERE o.id = ? AND o.deadline < ? AND o.status = 'actif'
+    `, [id, now]);
+
+    if (offerRows.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No update needed - offer not expired or already updated'
+      });
+    }
+
+    const offer = offerRows[0];
+
+    // Update the offer status
+    await pool.query(`
+      UPDATE offers
+      SET status = 'sous_evaluation'
       WHERE id = ? AND deadline < ? AND status = 'actif'
     `, [id, now]);
-    
-    if (result.affectedRows > 0) {
-      logAction(`System automatically changed offer ID ${id} status from 'actif' to 'sous_evaluation' due to expired deadline (timer trigger)`);
-      console.log(`Offer ID ${id} status changed to 'sous_evaluation' via timer trigger`);
+
+    // Send expiration email immediately
+    try {
+      let notificationEmails = [];
+      if (offer.notification_emails) {
+        try {
+          notificationEmails = JSON.parse(offer.notification_emails);
+        } catch (e) {
+          console.error('Error parsing notification emails for offer', offer.id, ':', e.message);
+        }
+      }
+
+      // Add HR creator email to the notification list if not already included
+      if (offer.hr_email && !notificationEmails.includes(offer.hr_email)) {
+        notificationEmails.unshift(offer.hr_email); // Add HR email first
+      }
+
+      if (notificationEmails.length > 0) {
+        for (const email of notificationEmails) {
+          try {
+            // Personalize the email for HR vs other recipients
+            const isHR = email === offer.hr_email;
+            const recipientName = isHR ? offer.hr_name : 'Notification Recipient';
+
+            await sendEmailWithGraphAPI(
+              email,
+              `Offer Expired: ${offer.title}`,
+              createExpirationNotificationEmail(recipientName, offer.title, offer.deadline)
+            );
+
+            // Log action
+            const recipientType = isHR ? 'HR creator' : 'notification email';
+            logAction(`System sent immediate expiration notification for offer "${offer.title}" to ${email} (${recipientType})`);
+            console.log(`📧 Immediate expiration email sent to ${email} for offer "${offer.title}"`);
+          } catch (emailError) {
+            console.error(`Failed to send immediate expiration email to ${email} for offer ${offer.title}:`, emailError.message);
+          }
+        }
+      }
+
+      // Mark as notified to prevent duplicate emails from cron job
+      await pool.query('UPDATE offers SET deadline_notified = TRUE WHERE id = ?', [id]);
+
+      // Log action
+      logAction(`System processed immediate expiration for offer "${offer.title}" with ${notificationEmails.length} notification emails`);
+
+    } catch (emailError) {
+      console.error('Error sending immediate expiration email:', emailError);
+      // Don't fail the status update if email fails
     }
-    
-    res.json({ 
-      success: true, 
-      message: result.affectedRows > 0 ? 'Status updated' : 'No update needed',
-      updated: result.affectedRows > 0
+
+    logAction(`System automatically changed offer "${offer.title}" status from 'actif' to 'sous_evaluation' due to expired deadline (immediate trigger)`);
+    console.log(`⚡ Offer "${offer.title}" (ID: ${id}) status changed to 'sous_evaluation' and expiration email sent immediatelyy`);
+
+    res.json({
+      success: true,
+      message: 'Status updated and expiration notification sent',
+      emailSent: true,
+      updated: true
     });
+
   } catch (err) {
-    console.error('Error updating expired status:', err);
-    res.status(500).json({ error: 'Failed to update status' });
+    console.error('Error in immediate expiration update:', err);
+    res.status(500).json({ error: 'Failed to update status: ' + err.message });
   }
 });
 
@@ -2490,32 +2555,32 @@ app.post('/offers/:id/update-expired-status', async (req, res) => {
 app.get('/offers/:id/faq', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Get current server local time for real-time status checking
     const now = getLocalDate();
-    
+
     // First, update any expired offers from actif to sous_evaluation
     // Use Tunisia time comparison directly
     await pool.query(`
-      UPDATE offers 
-      SET status = 'sous_evaluation' 
+      UPDATE offers
+      SET status = 'sous_evaluation'
       WHERE deadline < ? AND status = 'actif'
     `, [now]);
-    
+
     // Check if offer exists
     const [offers] = await pool.query('SELECT id FROM offers WHERE id = ?', [id]);
     if (offers.length === 0) {
       return res.status(404).json({ error: 'Offer not found' });
     }
-    
+
     // Get answered questions for this offer
     const [questions] = await pool.query(
       'SELECT question, answer FROM questions WHERE offer_id = ? AND answer IS NOT NULL ORDER BY answered_at DESC',
       [id]
     );
-    
+
     res.json(questions);
-    
+
   } catch (err) {
     console.error('Get FAQ error:', err);
     res.status(500).json({ error: 'Failed to get FAQ: ' + err.message });
