@@ -2587,6 +2587,200 @@ app.get('/offers/:id/faq', async (req, res) => {
   }
 });
 
+// Statistics endpoint for Comité d'Ouverture
+app.get('/api/statistics', auth, requireRole(['admin', 'comite_ajout', 'comite_ouverture']), async (req, res) => {
+  try {
+    // Overview Statistics
+    const [offerStats] = await pool.query(`
+      SELECT 
+        COUNT(*) as total_offers,
+        COUNT(CASE WHEN status = 'actif' THEN 1 END) as active_offers,
+        COUNT(CASE WHEN status = 'sous_evaluation' THEN 1 END) as evaluation_offers,
+        COUNT(CASE WHEN status = 'resultat' THEN 1 END) as result_offers,
+        COUNT(CASE WHEN deadline > NOW() THEN 1 END) as not_expired
+      FROM offers
+    `);
+
+    const [applicationStats] = await pool.query(`
+      SELECT 
+        COUNT(*) as total_applications,
+        COUNT(DISTINCT offer_id) as offers_with_applications,
+        (SELECT COUNT(*) FROM applications WHERE DATE(created_at) = DATE(NOW())) as applications_today,
+        (SELECT COUNT(*) FROM applications WHERE MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())) as applications_this_month
+      FROM applications
+    `);
+
+    // Geographic Statistics
+    const [countryStats] = await pool.query(`
+      SELECT 
+        applicant_country as country,
+        COUNT(*) as application_count
+      FROM applications 
+      GROUP BY applicant_country
+      ORDER BY application_count DESC
+      LIMIT 10
+    `);
+
+    const [offerCountryStats] = await pool.query(`
+      SELECT 
+        country,
+        COUNT(*) as offer_count
+      FROM offers
+      GROUP BY country
+      ORDER BY offer_count DESC
+      LIMIT 10
+    `);
+
+    // Offer Type Performance
+    const [typeStats] = await pool.query(`
+      SELECT 
+        o.type,
+        COUNT(o.id) as offer_count,
+        COALESCE(AVG(app_counts.application_count), 0) as avg_applications,
+        COUNT(a.id) as total_applications
+      FROM offers o
+      LEFT JOIN (
+        SELECT offer_id, COUNT(*) as application_count
+        FROM applications
+        GROUP BY offer_id
+      ) app_counts ON o.id = app_counts.offer_id
+      LEFT JOIN applications a ON o.id = a.offer_id
+      GROUP BY o.type
+      ORDER BY total_applications DESC
+    `);
+
+    // Department Performance
+    const [departmentStats] = await pool.query(`
+      SELECT 
+        d.name as department_name,
+        COUNT(o.id) as offer_count,
+        COUNT(a.id) as total_applications,
+        COALESCE(AVG(app_counts.application_count), 0) as avg_applications_per_offer
+      FROM departments d
+      LEFT JOIN projects p ON d.id = p.department_id
+      LEFT JOIN offers o ON p.id = o.project_id
+      LEFT JOIN applications a ON o.id = a.offer_id
+      LEFT JOIN (
+        SELECT offer_id, COUNT(*) as application_count
+        FROM applications
+        GROUP BY offer_id
+      ) app_counts ON o.id = app_counts.offer_id
+      GROUP BY d.id, d.name
+      HAVING offer_count > 0
+      ORDER BY total_applications DESC
+      LIMIT 10
+    `);
+
+    // Monthly Trends (last 12 months)
+    const [monthlyTrends] = await pool.query(`
+      SELECT 
+        DATE_FORMAT(created_at, '%Y-%m') as month,
+        COUNT(*) as application_count
+      FROM applications
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+      ORDER BY month ASC
+    `);
+
+    const [monthlyOfferTrends] = await pool.query(`
+      SELECT 
+        DATE_FORMAT(created_at, '%Y-%m') as month,
+        COUNT(*) as offer_count
+      FROM offers
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+      ORDER BY month ASC
+    `);
+
+    // Process Metrics
+    const [processMetrics] = await pool.query(`
+      SELECT 
+        COUNT(CASE WHEN a.archived_at IS NOT NULL THEN 1 END) as archived_applications,
+        COUNT(*) as total_expired_applications,
+        COUNT(CASE WHEN q.answer IS NOT NULL THEN 1 END) as answered_questions,
+        COUNT(*) as total_questions
+      FROM applications a
+      LEFT JOIN offers o ON a.offer_id = o.id
+      LEFT JOIN questions q ON o.id = q.offer_id
+      WHERE o.deadline < NOW()
+    `);
+
+    // Top Offers by Applications
+    const [topOffers] = await pool.query(`
+      SELECT 
+        o.id,
+        o.title,
+        o.type,
+        d.name as department_name,
+        COUNT(a.id) as application_count
+      FROM offers o
+      LEFT JOIN projects p ON o.project_id = p.id
+      LEFT JOIN departments d ON p.department_id = d.id
+      LEFT JOIN applications a ON o.id = a.offer_id
+      GROUP BY o.id, o.title, o.type, d.name
+      ORDER BY application_count DESC
+      LIMIT 10
+    `);
+
+    // User Activity
+    const [userActivity] = await pool.query(`
+      SELECT 
+        u.name,
+        u.role,
+        COUNT(o.id) as offers_created,
+        COUNT(DISTINCT a.id) as applications_processed
+      FROM users u
+      LEFT JOIN offers o ON u.id = o.created_by
+      LEFT JOIN applications a ON o.id = a.offer_id
+      GROUP BY u.id, u.name, u.role
+      ORDER BY offers_created DESC, applications_processed DESC
+    `);
+
+    // Calculate derived metrics
+    const stats = {
+      overview: {
+        ...offerStats[0],
+        ...applicationStats[0],
+        success_rate: applicationStats[0].offers_with_applications > 0 
+          ? ((applicationStats[0].offers_with_applications / offerStats[0].total_offers) * 100).toFixed(1)
+          : 0,
+        avg_applications_per_offer: offerStats[0].total_offers > 0
+          ? (applicationStats[0].total_applications / offerStats[0].total_offers).toFixed(1)
+          : 0
+      },
+      geographic: {
+        top_applicant_countries: countryStats,
+        offer_distribution: offerCountryStats
+      },
+      performance: {
+        by_type: typeStats,
+        by_department: departmentStats,
+        top_offers: topOffers
+      },
+      trends: {
+        monthly_applications: monthlyTrends,
+        monthly_offers: monthlyOfferTrends
+      },
+      process: {
+        ...processMetrics[0],
+        archive_completion_rate: processMetrics[0].total_expired_applications > 0
+          ? ((processMetrics[0].archived_applications / processMetrics[0].total_expired_applications) * 100).toFixed(1)
+          : 0,
+        question_response_rate: processMetrics[0].total_questions > 0
+          ? ((processMetrics[0].answered_questions / processMetrics[0].total_questions) * 100).toFixed(1)
+          : 0
+      },
+      user_activity: userActivity,
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Statistics API error:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
 // ───── Start Server ─────
 const PORT = 8000;
 app.listen(PORT, () => {
